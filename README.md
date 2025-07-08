@@ -1,6 +1,6 @@
-# Fil Studio: Front-End Boilerplates
+# Fil Studio: GLTF Viewer
 
-This repository contains the starter "boilerplates" for different Front-End configurations. There are 3 different barnches, each one depends on the previous one (needs to be merged accordingly) to keep up-to date.
+This repository contains a generic gltf viewer for our collaborators and clients.
 
 ## Main
 
