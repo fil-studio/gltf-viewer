@@ -1,7 +1,7 @@
 import { ThreeDOMLayer, ThreeLayer } from "@fils/gl-dom";
 import { UI, UIGroup } from "@fils/ui";
 import { uiWorld } from "@fils/ui-icons";
-import { ACESFilmicToneMapping, AgXToneMapping, CineonToneMapping, DataTexture, EquirectangularReflectionMapping, FloatType, LinearToneMapping, NeutralToneMapping, NoToneMapping, PerspectiveCamera, ReinhardToneMapping, RGBAFormat } from "three";
+import { ACESFilmicToneMapping, AgXToneMapping, CineonToneMapping, DataTexture, EquirectangularReflectionMapping, FloatType, LinearToneMapping, Mesh, MeshStandardMaterial, NeutralToneMapping, NoToneMapping, PerspectiveCamera, ReinhardToneMapping, RGBAFormat } from "three";
 import { gltfLoader, hdrLoader, readFileAsArrayBuffer, tLoader } from "./Loaders";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { getHDRI } from "@fils/gfx";
@@ -77,11 +77,35 @@ export class ThreeSketch extends ThreeLayer {
             }
         });
 
+        console.log(this.scene.children.length);
+
         if(this.scene.children.length === 1) return;
 
         this.sceneUI = this.ui.addGroup({
             title: '🎬 Scene'
         });
+
+        const addMaterial = (mat:MeshStandardMaterial) => {
+            const g = this.sceneUI.addGroup({
+                title: `Matertial: ${mat.name}`
+            });
+            g.add(mat, 'envMapIntensity', {
+                min: 0,
+                max: 1,
+                overExpose: [0, 1]
+            }).on('change', () => {
+                mat.needsUpdate = true;
+            })
+        }
+
+        this.scene.traverse(obj => {
+            if(obj['isMesh']) {
+                const mesh = obj as Mesh;
+                const mat = mesh.material as MeshStandardMaterial;
+                mat.envMap = this.scene.environment;
+                addMaterial(mat);
+            }
+        })
     }
 
     set gltf(value:File) {
@@ -91,10 +115,10 @@ export class ThreeSketch extends ThreeLayer {
 
             gltfLoader.parse(buff, null, gltf => {
                 this.scene.add(gltf.scene);
+                this.ui.destroy();
+                this.initGUI();
             });
 
-            this.ui.destroy();
-            this.initGUI();
         }, () => {
             console.warn('Error Parsing file');
         });
@@ -110,6 +134,15 @@ export class ThreeSketch extends ThreeLayer {
             hdrLoader.load(url, texture => {
                 const env = getHDRI(texture, this.gl.renderer);
                 this.scene.environment = env;
+
+                this.scene.traverse(obj => {
+                    if(obj['isMesh']) {
+                        const mesh = obj as Mesh;
+                        const mat = mesh.material as MeshStandardMaterial;
+                        mat.envMap = env;
+                        // addMaterial(mat);
+                    }
+                })
             })
         }, () => {
             console.warn('Error Parsing file');
